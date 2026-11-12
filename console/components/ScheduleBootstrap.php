@@ -38,7 +38,16 @@ class ScheduleBootstrap extends Component implements BootstrapInterface
 							}
 						});
 					}
-					$event->cron($scheduledTask->cron_expression);
+					$expression = ScheduledTask::normalizeCronExpression($scheduledTask->cron_expression);
+					if ($expression === null) {
+						Yii::error("Scheduled task #{$scheduledTask->id} has an invalid cron expression: {$scheduledTask->cron_expression}", __METHOD__);
+						// Never let one invalid task break the whole scheduler.
+						$event->when(function () {
+							return false;
+						});
+						continue;
+					}
+					$event->cron($expression);
 				}
 			}
 		}

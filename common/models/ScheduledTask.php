@@ -289,6 +289,8 @@ class ScheduledTask extends CommonActiveRecord
 				break;
 		}
 
+		// dragonmantank/cron-expression v3 supports only 5 fields (no year field).
+		unset($expression[self::CYCLE_YEAR]);
 		$expression = implode(' ', $expression);
 
 		if (!CronExpression::isValidExpression($expression)) {
@@ -296,5 +298,23 @@ class ScheduledTask extends CommonActiveRecord
 		}
 
 		return $expression;
+	}
+
+	/**
+	 * Normalizes a cron expression to the 5-field format supported by dragonmantank/cron-expression v3.
+	 * Legacy 6-field expressions (with a trailing `*` year field) are trimmed to 5 fields.
+	 *
+	 * @param string|null $expression
+	 * @return string|null The normalized expression or null if it is not valid.
+	 */
+	public static function normalizeCronExpression($expression)
+	{
+		$parts = preg_split('/\s+/', trim((string) $expression));
+		if (count($parts) === 6 && $parts[5] === '*') {
+			array_pop($parts);
+		}
+		$expression = implode(' ', $parts);
+
+		return CronExpression::isValidExpression($expression) ? $expression : null;
 	}
 }
